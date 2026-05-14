@@ -10,31 +10,30 @@ pipeline {
     stages {
         stage('Packaging') {
             steps {
-                echo 'Packaging..'
+                echo 'Packaging con Maven...'
                 sh 'mvn clean package'
             }
         }
         
-        // --- AQUÍ VA LA PARTE DE LIMPIEZA ---
         stage('Cleanup') {
             steps {
-                echo 'Cleaning up old container...'
+                echo 'Eliminando contenedor antiguo si existe...'
+                // Borra SOLO este contenedor, permitiendo que el backend siga vivo
                 sh 'docker rm -f devops-web-project-server || true'
             }
         }
 
-        stage('build image') {
+        stage('Build Image') {
             steps {
-                echo 'Building image..'
-                // Usamos el tag v1 y tu usuario
+                echo 'Construyendo imagen Docker...'
                 sh 'docker build -t davids884/devops-web-project:v1 .'
             }
         }
 
-        stage('run container') {
+        stage('Run Container') {
             steps {
-                echo 'Running container on port 8081..'
-                // Mapeo 8081 -> 8080. El nombre coincide con el del Cleanup
+                echo 'Lanzando contenedor en puerto 8081...'
+                // Mapeamos el puerto 8081 de la VM al 8080 de Tomcat
                 sh 'docker run -d --name devops-web-project-server -p 8081:8080 davids884/devops-web-project:v1'
             }
         }
