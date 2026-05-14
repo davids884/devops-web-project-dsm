@@ -5,39 +5,34 @@ pipeline {
         }
     }
     tools {
-        // Se cambia 'maven-3.9.6' por 'maven' que es el estándar en Jenkins
-        maven 'maven' 
+        // Asegúrate de que en Jenkins (Tools) el nombre sea 'maven'
+        maven 'maven'
     }
     stages {
         stage('Packaging') {
             steps {
-                echo 'Packaging..'
+                echo 'Packaging con Maven...'
                 sh 'mvn clean package'
             }
         }
-        stage('Copying war file') {
+        stage('Cleanup Old Container') {
             steps {
-                echo 'Copying war file..'
-                // Usamos cp en lugar de mv para evitar errores si el archivo está bloqueado
-                sh 'cp target/*.war .'
-            }
-        }
-        stage('cleanup') {
-            steps {
-                // Borramos el contenedor anterior si existe para que no de error de "nombre duplicado"
+                echo 'Limpiando contenedores antiguos...'
+                // Borra el contenedor si ya existe para que no de error de nombre duplicado
                 sh 'docker rm -f devops-web-project-server || true'
-                sh 'docker system prune -f'
             }
         }
-        stage('build image') {
+        stage('Build Docker Image') {
             steps {
-                sh 'docker build -t davids884/devops-web-project:v1 --label devops-web-project-server .'
+                echo 'Construyendo la imagen Docker...'
+                sh 'docker build -t davids884/devops-web-project:v1 .'
             }
         }
-        stage('run container') {
+        stage('Run Docker Container') {
             steps {
-                // IMPORTANTE: Mantenemos puerto 8081 para no chocar con el Tomcat manual (8080)
-                sh 'docker run -d --name devops-web-project-server --label devops-web-project-server -p 8081:8080 davids884/devops-web-project:v1'
+                echo 'Arrancando el contenedor en el puerto 8081...'
+                // Mapeamos el puerto 8081 externo al 8080 interno de Tomcat
+                sh 'docker run -d --name devops-web-project-server -p 8081:8080 davids884/devops-web-project:v1'
             }
         }
     }
