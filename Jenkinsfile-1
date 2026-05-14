@@ -5,10 +5,11 @@ pipeline {
         }
     }
     tools {
-        // Usamos el nombre de la herramienta Maven configurada en tu Jenkins
-        maven 'maven' 
+        // Ajustado a 'maven' que es como lo tienes configurado
+        maven 'maven'
     }
     environment {
+        // ¡OJO! Asegúrate de que en Jenkins la credencial se llame exactamente así
         DOCKERHUB_CREDENTIALS = credentials('devops-dockerhub-token')
     }
     stages {
@@ -21,32 +22,41 @@ pipeline {
         stage('Copying war file') {
             steps {
                 echo 'Copying war file..'
-                // Mueve el archivo war a la raíz para que el Dockerfile lo encuentre
+                // Usamos cp para evitar errores si el archivo está bloqueado
                 sh 'cp target/*.war .'
             }
         }
         stage('build image') {
             steps {
-                echo 'Building Docker image..'
+                echo 'Building image..'
+                // IMPORTANTE: He puesto tu usuario davids884
                 sh 'docker build -t davids884/devops-web-project:v1 --label devops-web-project-server .'
             }
         }
         stage('Docker Hub Login') {
             steps {
-                echo 'Logging into Docker Hub..'
-                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                echo 'Logging in...'
+                // Usamos comillas dobles para que las variables de entorno funcionen
+                sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
             }
         }
         stage('Push to Docker Hub') {
             steps {
-                echo 'Pushing image to Docker Hub..'
+                echo 'Pushing...'
                 sh 'docker push davids884/devops-web-project:v1'
             }
         }
     }
     post {
         always {
-            sh 'docker logout'
+            // Metemos el logout dentro de un script para evitar el error de contexto
+            script {
+                try {
+                    sh 'docker logout'
+                } catch (Exception e) {
+                    echo "No se pudo cerrar sesión o no había sesión abierta"
+                }
+            }
         }
     }
 }
