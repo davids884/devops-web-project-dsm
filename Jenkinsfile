@@ -5,33 +5,36 @@ pipeline {
         }
     }
     tools {
-        // Asegúrate de que en Jenkins (Tools) el nombre sea 'maven'
         maven 'maven'
     }
     stages {
         stage('Packaging') {
             steps {
-                echo 'Packaging con Maven...'
+                echo 'Packaging..'
                 sh 'mvn clean package'
             }
         }
-        stage('Cleanup Old Container') {
+        
+        // --- AQUÍ VA LA PARTE DE LIMPIEZA ---
+        stage('Cleanup') {
             steps {
-                echo 'Limpiando contenedores antiguos...'
-                // Borra el contenedor si ya existe para que no de error de nombre duplicado
+                echo 'Cleaning up old container...'
                 sh 'docker rm -f devops-web-project-server || true'
             }
         }
-        stage('Build Docker Image') {
+
+        stage('build image') {
             steps {
-                echo 'Construyendo la imagen Docker...'
+                echo 'Building image..'
+                // Usamos el tag v1 y tu usuario
                 sh 'docker build -t davids884/devops-web-project:v1 .'
             }
         }
-        stage('Run Docker Container') {
+
+        stage('run container') {
             steps {
-                echo 'Arrancando el contenedor en el puerto 8081...'
-                // Mapeamos el puerto 8081 externo al 8080 interno de Tomcat
+                echo 'Running container on port 8081..'
+                // Mapeo 8081 -> 8080. El nombre coincide con el del Cleanup
                 sh 'docker run -d --name devops-web-project-server -p 8081:8080 davids884/devops-web-project:v1'
             }
         }
