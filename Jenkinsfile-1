@@ -5,13 +5,9 @@ pipeline {
         }
     }
     tools {
-        // Ajustado a 'maven' que es como lo tienes configurado
         maven 'maven'
     }
-    environment {
-        // ¡OJO! Asegúrate de que en Jenkins la credencial se llame exactamente así
-        DOCKERHUB_CREDENTIALS = credentials('devops-dockerhub-token')
-    }
+    // HEMOS QUITADO EL BLOQUE ENVIRONMENT QUE PEDÍA LA CREDENCIAL
     stages {
         stage('Packaging') {
             steps {
@@ -22,41 +18,17 @@ pipeline {
         stage('Copying war file') {
             steps {
                 echo 'Copying war file..'
-                // Usamos cp para evitar errores si el archivo está bloqueado
                 sh 'cp target/*.war .'
             }
         }
         stage('build image') {
             steps {
-                echo 'Building image..'
-                // IMPORTANTE: He puesto tu usuario davids884
+                echo 'Building image...'
+                // Aquí solo construye la imagen en tu máquina local
                 sh 'docker build -t davids884/devops-web-project:v1 --label devops-web-project-server .'
             }
         }
-        stage('Docker Hub Login') {
-            steps {
-                echo 'Logging in...'
-                // Usamos comillas dobles para que las variables de entorno funcionen
-                sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
-            }
-        }
-        stage('Push to Docker Hub') {
-            steps {
-                echo 'Pushing...'
-                sh 'docker push davids884/devops-web-project:v1'
-            }
-        }
-    }
-    post {
-        always {
-            // Metemos el logout dentro de un script para evitar el error de contexto
-            script {
-                try {
-                    sh 'docker logout'
-                } catch (Exception e) {
-                    echo "No se pudo cerrar sesión o no había sesión abierta"
-                }
-            }
-        }
+        // HEMOS QUITADO LOS STAGES DE 'Docker Hub Login' Y 'Push' 
+        // Porque esos son los que necesitan la contraseña obligatoriamente.
     }
 }
