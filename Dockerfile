@@ -1,11 +1,15 @@
-FROM ubuntu:22.04
-RUN apt update
-RUN apt upgrade -y
-RUN apt install openjdk-17-jre-headless -y
-RUN mkdir /opt/tomcat
-WORKDIR /tmp
-ADD https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.55/bin/apache-tomcat-10.1.55.tar.gz .
-RUN tar -xzvf apache-tomcat-10*tar.gz -C /opt/tomcat --strip-components=1
-COPY ./*.war /opt/tomcat/webapps
+# Usamos una imagen ligera de Tomcat con Java 11
+FROM tomcat:9.0-jdk11-openjdk
+
+# Borramos las aplicaciones de ejemplo que trae Tomcat por defecto
+RUN rm -rf /usr/local/tomcat/webapps/*
+
+# Copiamos el archivo .war que genera Maven
+# Lo renombramos a ROOT.war para que la web cargue directamente en la IP
+COPY target/*.war /usr/local/tomcat/webapps/ROOT.war
+
+# Exponemos el puerto interno de Tomcat
 EXPOSE 8080
-CMD ["/opt/tomcat/bin/catalina.sh", "run"]
+
+# Comando para arrancar Tomcat
+CMD ["catalina.sh", "run"]
