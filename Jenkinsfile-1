@@ -7,7 +7,10 @@ pipeline {
     tools {
         maven 'maven'
     }
-    // HEMOS QUITADO EL BLOQUE ENVIRONMENT QUE PEDÍA LA CREDENCIAL
+    environment {
+        // Ahora que tienes la credencial, volvemos a usarla
+        DOCKERHUB_CREDENTIALS = credentials('devops-dockerhub-token')
+    }
     stages {
         stage('Packaging') {
             steps {
@@ -24,11 +27,33 @@ pipeline {
         stage('build image') {
             steps {
                 echo 'Building image...'
-                // Aquí solo construye la imagen en tu máquina local
-                sh 'docker build -t davids884/devops-web-project:v1 --label devops-web-project-server .'
+                // IMPORTANTE: Cambiado a tu usuario dsanzmar
+                sh 'docker build -t dsanzmar/devops-web-project:v1 --label devops-web-project-server .'
             }
         }
-        // HEMOS QUITADO LOS STAGES DE 'Docker Hub Login' Y 'Push' 
-        // Porque esos son los que necesitan la contraseña obligatoriamente.
+        stage('Docker Hub Login') {
+            steps {
+                echo 'Logging into Docker Hub..'
+                sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
+            }
+        }
+        stage('Push to Docker Hub') {
+            steps {
+                echo 'Pushing to Docker Hub..'
+                // IMPORTANTE: Cambiado a tu usuario dsanzmar
+                sh 'docker push dsanzmar/devops-web-project:v1'
+            }
+        }
+    }
+    post {
+        always {
+            script {
+                try {
+                    sh 'docker logout'
+                } catch (Exception e) {
+                    echo "Sesión ya cerrada"
+                }
+            }
+        }
     }
 }
